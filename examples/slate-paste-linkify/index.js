@@ -51,7 +51,7 @@ class Example extends React.Component {
     )
   }
 
-  renderNode(props, next) {
+  renderNode(props, editor, next) {
     const { node, attributes, children } = props
     switch (node.type) {
       case 'link':

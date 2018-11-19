@@ -19,15 +19,15 @@ function AutoReplace(opts = {}) {
    * On key down.
    *
    * @param {Event} event
-   * @param {Change} change
+   * @param {Editor} editor
    * @param {Function} next
    * @return {Value}
    */
 
-  function onKeyDown(event, change, next) {
-    if (!trigger(event, change, next)) return next()
+  function onKeyDown(event, editor, next) {
+    if (!trigger(event, editor, next)) return next()
 
-    const { value } = change
+    const { value } = editor
     const { selection } = value
     if (selection.isExpanded) return next()
 
@@ -45,7 +45,7 @@ function AutoReplace(opts = {}) {
     const offsets = getOffsets(matches, startOffset)
 
     offsets.forEach(offset => {
-      change
+      editor
         .moveAnchorTo(offset.start)
         .moveFocusTo(offset.end)
         .delete()
@@ -53,8 +53,8 @@ function AutoReplace(opts = {}) {
     })
 
     startOffset -= totalRemoved
-    change.moveTo(startOffset)
-    change.call(opts.change, event, matches)
+    editor.moveTo(startOffset)
+    editor.call(opts.editor, event, matches)
   }
 
   /**

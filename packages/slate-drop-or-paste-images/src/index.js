@@ -11,6 +11,7 @@ import { getEventTransfer, getEventRange } from 'slate-react'
  *
  * @param {Object} options
  *   @property {Function} insertImage
+ *   @property {Function} onError
  *   @property {Array} extensions (optional)
  * @return {Object} plugin
  */
@@ -50,15 +51,14 @@ function DropOrPasteImages(options = {}) {
   /**
    * Apply the change for a given file and update the editor with the result.
    *
-   * @param {Change} change
+   * @param {Editor} editor
    * @param {Blob} file
    * @return {Promise}
    */
 
-  function asyncApplyChange(change, file) {
-    const { editor } = change
+  function asyncApplyChange(editor, file) {
 
-    return Promise.resolve(insertImage(change, file)).then(() => {
+    return Promise.resolve(editor.insertDragDropImage(file)).then(() => {
       editor.onChange(change)
     })
   }
@@ -67,23 +67,23 @@ function DropOrPasteImages(options = {}) {
    * On drop or paste.
    *
    * @param {Event} event
-   * @param {Change} change
+   * @param {Editor} editor
    * @param {Function} next
    * @return {State}
    */
 
-  function onInsert(event, change, next) {
-    const { editor } = change
+  function onInsert(event, editor, next) {
+
     const transfer = getEventTransfer(event)
     const range = getEventRange(event, editor)
 
     switch (transfer.type) {
       case 'files':
-        return onInsertFiles(event, change, next, transfer, range)
+        return onInsertFiles(event, editor, next, transfer, range)
       case 'html':
-        return onInsertHtml(event, change, next, transfer, range)
+        return onInsertHtml(event, editor, next, transfer, range)
       case 'text':
-        return onInsertText(event, change, next, transfer, range)
+        return onInsertText(event, editor, next, transfer, range)
       default:
         return next()
     }
@@ -93,14 +93,14 @@ function DropOrPasteImages(options = {}) {
    * On drop or paste files.
    *
    * @param {Event} event
-   * @param {Change} change
+   * @param {Editor} editor
    * @param {Function} next
    * @param {Object} transfer
    * @param {Range} range
    * @return {Boolean}
    */
 
-  function onInsertFiles(event, change, next, transfer, range) {
+  function onInsertFiles(event, editor, next, transfer, range) {
     const { files } = transfer
 
     for (const file of files) {
@@ -111,10 +111,10 @@ function DropOrPasteImages(options = {}) {
       }
 
       if (range) {
-        change.select(range)
+        editor.select(range)
       }
 
-      asyncApplyChange(change, file)
+      asyncApplyChange(editor, file)
     }
   }
 
@@ -122,15 +122,14 @@ function DropOrPasteImages(options = {}) {
    * On drop or paste html.
    *
    * @param {Event} event
-   * @param {Change} change
+   * @param {Editor} editor
    * @param {Function} next
    * @param {Object} transfer
    * @param {Range} range
    * @return {Boolean}
    */
 
-  function onInsertHtml(event, change, next, transfer, range) {
-    const { editor } = change
+  function onInsertHtml(event, editor, next, transfer, range) {
     const { html } = transfer
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
@@ -146,15 +145,16 @@ function DropOrPasteImages(options = {}) {
     }
 
     loadImageFile(src, (err, file) => {
-      if (err) return
+      if (err) {
+        options.onError(err);
+        return
+      }
 
-      editor.change(c => {
-        if (range) {
-          c.select(range)
-        }
+      if (range) {
+        editor.select(range)
+      }
 
-        asyncApplyChange(c, file)
-      })
+      asyncApplyChange(editor, file)
     })
   }
 
@@ -162,29 +162,28 @@ function DropOrPasteImages(options = {}) {
    * On drop or paste text.
    *
    * @param {Event} event
-   * @param {Change} change
+   * @param {Editor} editor
    * @param {Function} next
    * @param {Object} transfer
    * @param {Range} range
    * @return {Boolean}
    */
 
-  function onInsertText(event, change, next, transfer, range) {
-    const { editor } = change
+  function onInsertText(event, editor, next, transfer, range) {
     const { text } = transfer
     if (!isUrl(text)) return next()
     if (!isImage(text)) return next()
 
     loadImageFile(text, (err, file) => {
-      if (err) return
+      if (err) {
+        options.onError(err);
+        return
+      }
 
-      editor.change(c => {
-        if (range) {
-          c.select(range)
-        }
-
-        asyncApplyChange(c, editor, file)
-      })
+      if (range) {
+        editor.select(range)
+      }
+      asyncApplyChange(editor, file)
     })
   }
 
@@ -197,6 +196,9 @@ function DropOrPasteImages(options = {}) {
   return {
     onDrop: onInsert,
     onPaste: onInsert,
+    commands: {
+      insertDragDropImage: (editor, file) => {options.insertImage(editor, file)}
+    }
   }
 }
 

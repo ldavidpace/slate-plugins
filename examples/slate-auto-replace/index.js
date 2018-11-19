@@ -44,7 +44,13 @@ export default class Example extends React.Component {
   onChange = ({ value }) => {
     this.setState({ value })
   }
-
+  schema = {
+    blocks: {
+      hr: {
+        isVoid: true
+      }
+    }
+  };
   render() {
     return (
       <Editor
@@ -52,11 +58,13 @@ export default class Example extends React.Component {
         plugins={this.plugins}
         onChange={this.onChange}
         renderNode={this.renderNode}
+        schema={this.schema}
+        
       />
     )
   }
 
-  renderNode(props, next) {
+  renderNode(props, editor, next) {
     const { node, attributes, children } = props
     switch (node.type) {
       case 'blockquote':

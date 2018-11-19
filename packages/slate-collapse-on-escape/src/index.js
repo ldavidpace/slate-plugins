@@ -9,13 +9,13 @@ import toPascal from 'to-pascal-case'
 
 function CollapseOnEscape(options = {}) {
   return {
-    onKeyDown(event, change, next) {
-      const { value } = change
+    onKeyDown(event, editor, next) {
+      const { value } = editor
       const { selection } = value
       if (event.key != 'Escape') return next()
       if (selection.isCollapsed) return next()
       const edge = toPascal(options.toEdge || 'start')
-      change[`moveTo${edge}`]()
+      editor[`moveTo${edge}`]()
     },
   }
 }

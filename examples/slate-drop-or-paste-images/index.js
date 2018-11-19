@@ -63,7 +63,13 @@ class Example extends React.Component {
   onChange = ({ value }) => {
     this.setState({ value })
   }
-
+  schema = {
+    blocks: {
+      image: {
+        isVoid: true
+      }
+    }
+  };
   render() {
     return (
       <Editor
@@ -71,14 +77,15 @@ class Example extends React.Component {
         plugins={this.plugins}
         onChange={this.onChange}
         renderNode={this.renderNode}
+        schema={this.schema}
       />
     )
   }
 
-  renderNode(props, next) {
+  renderNode(props, editor, next) {
     switch (props.node.type) {
       case 'image':
-        return <Image {...props} />
+        return <div><Image {...props} />{props.node.children}</div>
       default:
         return next()
     }
